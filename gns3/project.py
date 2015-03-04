@@ -21,6 +21,8 @@ import shutil
 from .qt import QtCore
 
 from gns3.servers import Servers
+from gns3.topology import Topology
+from gns3.node import Node
 
 import logging
 log = logging.getLogger(__name__)
@@ -321,3 +323,11 @@ class Project(QtCore.QObject):
     def _event_received(self, result, **kwargs):
 
         log.debug("Event received: %s", result)
+        if result["action"] in ["vm.started", "vm.stopped"]:
+            vm = Topology.instance().getVM(result["event"]["vm_id"])
+            if result["action"] == "vm.started":
+                vm.setStatus(Node.started)
+                vm.started_signal.emit()
+            elif result["action"] == "vm.stopped":
+                vm.setStatus(Node.stopped)
+                vm.stopped_signal.emit()

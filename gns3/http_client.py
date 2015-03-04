@@ -308,7 +308,8 @@ class HTTPClient(QtCore.QObject):
             response.downloadProgress.connect(partial(self._processDownloadProgress, response, downloadProgressCallback, context))
 
     def _processDownloadProgress(self, response, callback, context):
-        callback(bytes(response.readAll()).decode(), server=self, context=context)
+        answer = json.loads(bytes(response.readAll()).decode())
+        callback(answer, server=self, context=context)
 
     def _processResponse(self, response, callback, context):
 
