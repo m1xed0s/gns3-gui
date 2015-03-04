@@ -222,7 +222,7 @@ class HTTPClient(QtCore.QObject):
 
         return QtNetwork.QNetworkRequest(url)
 
-    def createHTTPQuery(self, method, path, callback, body={}, context={}):
+    def createHTTPQuery(self, method, path, callback, body={}, context={}, downloadProgressCallback=None, showProgress=True):
         """
         Call the remote server, if not connected, check connection before
 
@@ -231,13 +231,15 @@ class HTTPClient(QtCore.QObject):
         :param body: params to send (dictionary)
         :param callback: callback method to call when the server replies
         :param context: Pass a context to the response callback
+        :param downloadProgressCallback: Callback called when received something, it can be an incomplete response
+        :param showProgress: Display progress to the user
         """
 
         if self._connected:
-            self.executeHTTPQuery(method, path, callback, body, context=context)
+            self.executeHTTPQuery(method, path, callback, body, context=context, downloadProgressCallback=downloadProgressCallback, showProgress=showProgress)
         else:
             log.info("Connection to {}:{}".format(self.host, self.port))
-            self.executeHTTPQuery("GET", "/version", partial(self._callbackConnect, method, path, callback, body, context=context), {})
+            self.executeHTTPQuery("GET", "/version", partial(self._callbackConnect, method, path, callback, body, context=context), {}, downloadProgressCallback=downloadProgressCallback, showProgress=showProgress)
 
     def _callbackConnect(self, method, path, callback, body, params, error=False, **kwargs):
         """
@@ -258,7 +260,7 @@ class HTTPClient(QtCore.QObject):
         self._connected = True
         self._version = params["version"]
 
-    def executeHTTPQuery(self, method, path, callback, body, context={}):
+    def executeHTTPQuery(self, method, path, callback, body, context={}, downloadProgressCallback=None, showProgress=True):
         """
         Call the remote server
 
@@ -267,12 +269,15 @@ class HTTPClient(QtCore.QObject):
         :param body: params to send (dictionary)
         :param callback: callback method to call when the server replies
         :param context: Pass a context to the response callback
+        :param downloadProgressCallback: Callback called when received something, it can be an incomplete response
+        :param showProgress: Display progress to the user
         """
 
         import copy
         context = copy.copy(context)
         context["query_id"] = str(uuid.uuid4())
-        self.notify_progress_start_query(context["query_id"])
+        if showProgress:
+            self.notify_progress_start_query(context["query_id"])
         log.debug("{method} {scheme}://{host}:{port}/v1{path} {body}".format(method=method, scheme=self.scheme, host=self.host, port=self.port, path=path, body=body))
         url = QtCore.QUrl("{scheme}://{host}:{port}/v1{path}".format(scheme=self.scheme, host=self.host, port=self.port, path=path))
         request = self._request(url)
@@ -299,6 +304,11 @@ class HTTPClient(QtCore.QObject):
             response = self._network_manager.deleteResource(request)
 
         response.finished.connect(partial(self._processResponse, response, callback, context))
+        if downloadProgressCallback is not None:
+            response.downloadProgress.connect(partial(self._processDownloadProgress, response, downloadProgressCallback, context))
+
+    def _processDownloadProgress(self, response, callback, context):
+        callback(bytes(response.readAll()).decode(), server=self, context=context)
 
     def _processResponse(self, response, callback, context):
 

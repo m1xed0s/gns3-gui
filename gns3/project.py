@@ -51,6 +51,7 @@ class Project(QtCore.QObject):
         self._name = None
         self._project_instances.add(self)
         self._created_servers = set()
+        self._listen_notification = False
 
         super().__init__()
 
@@ -261,6 +262,9 @@ class Project(QtCore.QObject):
         if server not in self._created_servers:
             self._created_servers.add(server)
 
+        if self._listen_notification is False:
+            self._startListenNotifications(server)
+
         path = "/projects/{project_id}{path}".format(project_id=self._id, path=path)
         server.createHTTPQuery(method, path, callback, body=body, context=context)
 
@@ -307,3 +311,13 @@ class Project(QtCore.QObject):
             server.put("/projects/{project_id}".format(project_id=self._id),
                        None,
                        body={"path": new_path, "temporary": False})
+
+    def _startListenNotifications(self, server):
+
+        self._listen_notification = True
+        path = "/projects/{project_id}/notifications".format(project_id=self._id)
+        server.createHTTPQuery("GET", path, None, downloadProgressCallback=self._event_received, showProgress=False)
+
+    def _event_received(self, result, **kwargs):
+
+        log.debug("Event received: %s", result)
