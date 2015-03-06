@@ -145,7 +145,6 @@ def test_processDownloadProgress(http_client, response):
 
 
 def test_processDownloadProgressPartial(http_client, response):
-
     """
     We can read an incomplete JSON on the network and we need
     to wait for the next part"""

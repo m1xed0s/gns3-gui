@@ -236,13 +236,14 @@ class HTTPClient(QtCore.QObject):
         :param context: Pass a context to the response callback
         :param downloadProgressCallback: Callback called when received something, it can be an incomplete response
         :param showProgress: Display progress to the user
+        :returns: QNetworkReply
         """
 
         if self._connected:
-            self.executeHTTPQuery(method, path, callback, body, context=context, downloadProgressCallback=downloadProgressCallback, showProgress=showProgress)
+            return self.executeHTTPQuery(method, path, callback, body, context=context, downloadProgressCallback=downloadProgressCallback, showProgress=showProgress)
         else:
             log.info("Connection to {}:{}".format(self.host, self.port))
-            self.executeHTTPQuery("GET", "/version", partial(self._callbackConnect, method, path, callback, body, context=context), {}, downloadProgressCallback=downloadProgressCallback, showProgress=showProgress)
+            return self.executeHTTPQuery("GET", "/version", partial(self._callbackConnect, method, path, callback, body, context=context), {}, downloadProgressCallback=downloadProgressCallback, showProgress=showProgress)
 
     def _callbackConnect(self, method, path, callback, body, params, error=False, **kwargs):
         """
@@ -274,6 +275,7 @@ class HTTPClient(QtCore.QObject):
         :param context: Pass a context to the response callback
         :param downloadProgressCallback: Callback called when received something, it can be an incomplete response
         :param showProgress: Display progress to the user
+        :returns: QNetworkReply
         """
 
         import copy
@@ -309,6 +311,7 @@ class HTTPClient(QtCore.QObject):
         response.finished.connect(partial(self._processResponse, response, callback, context))
         if downloadProgressCallback is not None:
             response.downloadProgress.connect(partial(self._processDownloadProgress, response, downloadProgressCallback, context))
+        return response
 
     def _processDownloadProgress(self, response, callback, context):
         """
@@ -325,7 +328,7 @@ class HTTPClient(QtCore.QObject):
                 answer, index = json.JSONDecoder().raw_decode(content)
                 callback(answer, server=self, context=context)
                 content = content[index:]
-        except ValueError: # Partial JSON
+        except ValueError:  # Partial JSON
             self._buffer[context["query_id"]] = content
 
     def _processResponse(self, response, callback, context):

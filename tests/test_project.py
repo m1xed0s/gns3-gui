@@ -56,7 +56,7 @@ def test_project_post_non_initialized_project_local_server(tmpdir, local_server)
         assert args[1] == "/projects/{uuid}/test".format(uuid=uuid)
         assert kwargs["body"] == {"test": "test"}
 
-        assert project._listen_notification
+        assert len(project._notifications_stream) == 1
 
 
 def test_project_post_non_created_project_local_server(tmpdir, local_server):

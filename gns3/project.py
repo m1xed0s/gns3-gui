@@ -53,7 +53,7 @@ class Project(QtCore.QObject):
         self._name = None
         self._project_instances.add(self)
         self._created_servers = set()
-        self._listen_notification = False
+        self._notifications_stream = set()
 
         super().__init__()
 
@@ -264,8 +264,7 @@ class Project(QtCore.QObject):
         if server not in self._created_servers:
             self._created_servers.add(server)
 
-        if self._listen_notification is False:
-            self._startListenNotifications(server)
+        self._startListenNotifications(server)
 
         path = "/projects/{project_id}{path}".format(project_id=self._id, path=path)
         server.createHTTPQuery(method, path, callback, body=body, context=context)
@@ -276,6 +275,8 @@ class Project(QtCore.QObject):
         if self._id:
             self.project_about_to_close_signal.emit()
 
+            for stream in self._notifications_stream:
+                stream.abort()
             for server in list(self._created_servers):
                 server.post("/projects/{project_id}/close".format(project_id=self._id), self._projectClosedCallback, body={})
         else:
@@ -316,9 +317,8 @@ class Project(QtCore.QObject):
 
     def _startListenNotifications(self, server):
 
-        self._listen_notification = True
         path = "/projects/{project_id}/notifications".format(project_id=self._id)
-        server.createHTTPQuery("GET", path, None, downloadProgressCallback=self._event_received, showProgress=False)
+        self._notifications_stream.add(server.createHTTPQuery("GET", path, None, downloadProgressCallback=self._event_received, showProgress=False))
 
     def _event_received(self, result, **kwargs):
 
