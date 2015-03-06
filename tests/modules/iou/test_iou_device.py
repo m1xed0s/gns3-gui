@@ -340,7 +340,7 @@ def test_startPacketCapture(iou_device):
             # Callback
             args[1]({"pcap_file_path": "/tmp/test.pcap"}, context=kwargs["context"])
 
-            assert port_mock.called_with("/tmp/test.pcap")
+            port_mock.assert_called_with("/tmp/test.pcap")
 
 
 def test_stopPacketCapture(iou_device):

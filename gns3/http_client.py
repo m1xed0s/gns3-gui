@@ -66,6 +66,9 @@ class HTTPClient(QtCore.QObject):
         self._network_manager = network_manager
         # self.check_server_version()
 
+        # A buffer used by progress download
+        self._buffer = {}
+
         # create an unique ID
         self._id = HTTPClient._instance_count
         HTTPClient._instance_count += 1
@@ -308,8 +311,22 @@ class HTTPClient(QtCore.QObject):
             response.downloadProgress.connect(partial(self._processDownloadProgress, response, downloadProgressCallback, context))
 
     def _processDownloadProgress(self, response, callback, context):
-        answer = json.loads(bytes(response.readAll()).decode())
-        callback(answer, server=self, context=context)
+        """
+        Process a packet receive on the notification feed.
+        The feed can contains partial JSON. If we found a
+        part of a JSON we keep it for the next packet
+        """
+
+        content = bytes(response.readAll()).decode().strip()
+        if context["query_id"] in self._buffer:
+            content = self._buffer[context["query_id"]] + content
+        try:
+            while True:
+                answer, index = json.JSONDecoder().raw_decode(content)
+                callback(answer, server=self, context=context)
+                content = content[index:]
+        except ValueError: # Partial JSON
+            self._buffer[context["query_id"]] = content
 
     def _processResponse(self, response, callback, context):
 
