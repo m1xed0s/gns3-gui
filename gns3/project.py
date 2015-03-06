@@ -325,9 +325,10 @@ class Project(QtCore.QObject):
         log.debug("Event received: %s", result)
         if result["action"] in ["vm.started", "vm.stopped"]:
             vm = Topology.instance().getVM(result["event"]["vm_id"])
-            if result["action"] == "vm.started":
-                vm.setStatus(Node.started)
-                vm.started_signal.emit()
-            elif result["action"] == "vm.stopped":
-                vm.setStatus(Node.stopped)
-                vm.stopped_signal.emit()
+            if vm is not None:
+                if result["action"] == "vm.started":
+                    vm.setStatus(Node.started)
+                    vm.started_signal.emit()
+                elif result["action"] == "vm.stopped":
+                    vm.setStatus(Node.stopped)
+                    vm.stopped_signal.emit()
