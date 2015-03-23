@@ -41,13 +41,19 @@ if sys.platform.startswith("win"):
     else:
         # windows 32-bit
         program_files_x86 = program_files = os.environ["PROGRAMFILES"]
+    
+    for fn in os.listdir(program_files_x86):
+        if "*5" in fn:
+            program_files_x86_NetSarang = os.path.join(program_files_x86, fn)
+        else:
+            program_files_x86_NetSarang = program_files_x86
 
     PRECONFIGURED_TELNET_CONSOLE_COMMANDS = {'Putty (included with GNS3)': 'putty.exe -telnet %h %p -wt "%d" -gns3 5 -skin 4',
                                              'SuperPutty (included with GNS3)': r'SuperPutty.exe -telnet "%h -P %p -wt \"%d\""',
                                              'SecureCRT': r'"{}\VanDyke Software\SecureCRT\SecureCRT.exe" /SCRIPT securecrt.vbs /ARG "%d" /T /TELNET %h %p'.format(program_files),
                                              'TeraTerm Pro': r'"{}\teraterm\ttermpro.exe" /W="%d" /M="ttstart.macro" /T=1 %h %p'.format(program_files_x86),
                                              'Telnet': 'telnet %h %p',
-                                             'Xshell 4': r'"{}\NetSarang\Xshell 4\xshell.exe" -url telnet://%h:%p'.format(program_files_x86),
+                                             'Xshell': r'"{}\xshell.exe" -url telnet://%h:%p'.format(program_files_x86_NetSarang),
                                              'ZOC 6': r'"{}\ZOC6\zoc.exe" "/TELNET:%h:%p" /TABBED "/TITLE:%d"'.format(program_files_x86)}
 
     # default on Windows
